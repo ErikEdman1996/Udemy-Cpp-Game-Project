@@ -15,8 +15,6 @@ struct GameData
 
 AssetManager assetManager;
 
-void RenderTree();
-
 bool InitGame()
 {
 	assetManager.LoadAll();
@@ -75,21 +73,38 @@ bool UpdateGame(Block::Type selectedBlock)
 
 	if(IsMouseButtonDown(MOUSE_BUTTON_LEFT))	// Remove block
 	{
-		auto block = gameData.gameMap.GetBlockSafe(blockX, blockY);
+		auto blockFg = gameData.gameMap.GetBlockSafe(blockX, blockY);
+		auto blockBg = gameData.gameMap.GetBackgroundBlockSafe(blockX, blockY);
 
-		if(block != nullptr)
+		if(blockFg != nullptr)
 		{
-			block->type = Block::Type::Air;
+			blockFg->type = Block::Type::Air;
+		}
+		if(blockBg != nullptr)
+		{
+			blockBg->type = Block::Type::Air;
 		}
 	}
 
 	if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))	// Place block
 	{
-		auto block = gameData.gameMap.GetBlockSafe(blockX, blockY);
-
-		if (block != nullptr)
+		if (selectedBlock >= Block::Type::DirtWall)
 		{
-			block->type = selectedBlock;
+			auto block = gameData.gameMap.GetBackgroundBlockSafe(blockX, blockY);
+
+			if (block != nullptr)
+			{
+				block->type = selectedBlock;
+			}
+		}
+		else
+		{
+			auto block = gameData.gameMap.GetBlockSafe(blockX, blockY);
+
+			if (block != nullptr)
+			{
+				block->type = selectedBlock;
+			}
 		}
 	}
 
@@ -108,6 +123,26 @@ bool UpdateGame(Block::Type selectedBlock)
 	startY = Clamp(startY, 0, gameData.gameMap.height - 1);
 	endY = Clamp(endY, 0, gameData.gameMap.height - 1);
 
+
+	// Drawing background blocks
+	for (int y = startY; y < endY; y++)
+	{
+		for (int x = startX; x < endX; x++)
+		{
+			auto& block = gameData.gameMap.GetBackgroundBlockUnsafe(x, y);
+			if(block.type != Block::Type::Air && block.type >= Block::Type::DirtWall)
+			{
+				DrawTexturePro(assetManager.textureAtlas,
+					GetTextureAltasBlock((int)block.type, 0, 32, 32),
+					{ (float)x, (float)y, 1, 1 },
+					{ 0, 0 },
+					0.0f,
+					WHITE);
+			}
+		}
+	}
+
+	// Drawing foreground blocks
 	for (int y = startY; y < endY; y++)
 	{
 		for (int x = startX; x < endX; x++)
