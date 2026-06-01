@@ -6,6 +6,7 @@
 #include "gameMap.h"
 #include "helpers.h"
 #include <raymath.h>
+#include "randomStuff.h"
 
 struct GameData
 {
@@ -14,6 +15,7 @@ struct GameData
 }gameData;
 
 AssetManager assetManager;
+std::ranlux24_base rng{ std::random_device{}() };
 
 bool InitGame()
 {
@@ -95,6 +97,7 @@ bool UpdateGame(Block::Type selectedBlock)
 			if (block != nullptr)
 			{
 				block->type = selectedBlock;
+				block->variant = GetRandomInt(rng, 0, 3);
 			}
 		}
 		else
@@ -104,6 +107,7 @@ bool UpdateGame(Block::Type selectedBlock)
 			if (block != nullptr)
 			{
 				block->type = selectedBlock;
+				block->variant = GetRandomInt(rng, 0, 3);
 			}
 		}
 	}
@@ -133,7 +137,7 @@ bool UpdateGame(Block::Type selectedBlock)
 			if(block.type != Block::Type::Air && block.type >= Block::Type::DirtWall)
 			{
 				DrawTexturePro(assetManager.textureAtlas,
-					GetTextureAltasBlock((int)block.type, 0, 32, 32),
+					GetTextureAltasBlock((int)block.type, block.variant, 32, 32),
 					{ (float)x, (float)y, 1, 1 },
 					{ 0, 0 },
 					0.0f,
@@ -152,7 +156,7 @@ bool UpdateGame(Block::Type selectedBlock)
 			if(block.type != Block::Type::Air && block.type != Block::Type::WoodLog)
 			{
 				DrawTexturePro(assetManager.textureAtlas,
-					GetTextureAltasBlock((int)block.type, 0, 32, 32),
+					GetTextureAltasBlock((int)block.type, block.variant, 32, 32),
 					{ (float)x, (float)y, 1, 1 },
 					{ 0, 0 },
 					0.0f,

@@ -82,4 +82,5 @@ struct Block
 	};
 
 	Type type{ Type::Air };
+	std::uint8_t variant{ 0 };
 };
