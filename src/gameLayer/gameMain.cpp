@@ -5,6 +5,7 @@
 #include <assetManager.h>
 #include "gameMap.h"
 #include "helpers.h"
+#include <raymath.h>
 
 struct GameData
 {
@@ -13,6 +14,8 @@ struct GameData
 }gameData;
 
 AssetManager assetManager;
+
+void RenderTree();
 
 bool InitGame()
 {
@@ -24,18 +27,7 @@ bool InitGame()
 	{
 		for(int x = 0; x < gameData.gameMap.width; x++)
 		{
-			if(y == 0)
-			{
-				gameData.gameMap.GetBlockUnsafe(x, y).type = Block::Type::GrassBlock;
-			}
-			else if(y == 1)
-			{
-				gameData.gameMap.GetBlockUnsafe(x, y).type = Block::Type::Dirt;
-			}
-			else
-			{
-				gameData.gameMap.GetBlockUnsafe(x, y).type = Block::Type::Air;
-			}
+			gameData.gameMap.GetBlockUnsafe(x, y).type = Block::Type::Dirt;
 		}
 	}
 
@@ -46,7 +38,7 @@ bool InitGame()
 	return true;
 }
 
-bool UpdateGame()
+bool UpdateGame(Block::Type selectedBlock)
 {
 	float deltaTime{ GetFrameTime() };
 
@@ -77,16 +69,52 @@ bool UpdateGame()
 		gameData.camera.target.y += 7.f * deltaTime;
 	}
 
+	Vector2 worldMousePos = GetScreenToWorld2D(GetMousePosition(), gameData.camera);
+	int blockX = (int)floorf(worldMousePos.x);
+	int blockY = (int)floorf(worldMousePos.y);
+
+	if(IsMouseButtonDown(MOUSE_BUTTON_LEFT))	// Remove block
+	{
+		auto block = gameData.gameMap.GetBlockSafe(blockX, blockY);
+
+		if(block != nullptr)
+		{
+			block->type = Block::Type::Air;
+		}
+	}
+
+	if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))	// Place block
+	{
+		auto block = gameData.gameMap.GetBlockSafe(blockX, blockY);
+
+		if (block != nullptr)
+		{
+			block->type = selectedBlock;
+		}
+	}
 
 	BeginMode2D(gameData.camera);
 
-	for (int y = 0; y < gameData.gameMap.height; y++)
+	Vector2 topLeftViewport = GetScreenToWorld2D({ 0, 0 }, gameData.camera);
+	Vector2 bottomRightViewport = GetScreenToWorld2D({ (float)GetScreenWidth(), (float)GetScreenHeight() }, gameData.camera);
+
+	int startX = (int)floorf(topLeftViewport.x - 1);
+	int endX = (int)ceilf(bottomRightViewport.x + 1);
+	int startY = (int)floorf(topLeftViewport.y - 1);
+	int endY = (int)ceilf(bottomRightViewport.y + 1);
+
+	startX = Clamp(startX, 0, gameData.gameMap.width - 1);
+	endX = Clamp(endX, 0, gameData.gameMap.width - 1);
+	startY = Clamp(startY, 0, gameData.gameMap.height - 1);
+	endY = Clamp(endY, 0, gameData.gameMap.height - 1);
+
+	for (int y = startY; y < endY; y++)
 	{
-		for (int x = 0; x < gameData.gameMap.width; x++)
+		for (int x = startX; x < endX; x++)
 		{
 			auto& block = gameData.gameMap.GetBlockUnsafe(x, y);
 
-			if(block.type != Block::Type::Air)
+			if(block.type != Block::Type::Air && block.type != Block::Type::WoodLog)
 			{
 				DrawTexturePro(assetManager.textureAtlas,
 					GetTextureAltasBlock((int)block.type, 0, 32, 32),
@@ -95,10 +123,75 @@ bool UpdateGame()
 					0.0f,
 					WHITE);
 			}
+			else if(block.type == Block::Type::WoodLog)
+			{
+				Block* blockAboveCurrent = gameData.gameMap.GetBlockSafe(x, y - 1);
+				Block* blockBelowCurrent = gameData.gameMap.GetBlockSafe(x, y + 1);
+				Block* blockLeftCurrent = gameData.gameMap.GetBlockSafe(x - 1, y);
+				Block* blockRightCurrent = gameData.gameMap.GetBlockSafe(x + 1, y);
+
+				bool hasLogAbove = blockAboveCurrent != nullptr && blockAboveCurrent->type == Block::Type::WoodLog;
+				bool hasLogBelow = blockBelowCurrent != nullptr && blockBelowCurrent->type == Block::Type::WoodLog;
+				bool hasLeavesAbove = blockAboveCurrent != nullptr && blockAboveCurrent->type == Block::Type::Leaves;
+				bool hasLeavesRight = blockRightCurrent != nullptr && blockRightCurrent->type == Block::Type::Leaves;
+				bool hasLeavesLeft = blockLeftCurrent != nullptr && blockLeftCurrent->type == Block::Type::Leaves;
+
+				int treeColumn = 0;
+				int treeRow = abs((x * 31 + y * 17) % 4);
+
+				if (!hasLogAbove && !hasLogBelow && !hasLeavesAbove)
+				{
+					treeColumn = 7; // single log, no leaves above
+				}
+				else if (!hasLogAbove && hasLeavesAbove)
+				{
+					treeColumn = 5; // leaves above piece
+				}
+				else if (!hasLogAbove)
+				{
+					treeColumn = 6; // exposed top piece
+				}
+				else if (!hasLogBelow)
+				{
+					treeColumn = 4; // base piece
+				}
+				else if (hasLeavesLeft && hasLeavesRight)
+				{
+					treeColumn = 1;
+				}
+				else if (hasLeavesLeft)
+				{
+					treeColumn = 3; // or 2 if your atlas is swapped
+				}
+				else if (hasLeavesRight)
+				{
+					treeColumn = 2; // or 3 if your atlas is swapped
+				}
+				else
+				{
+					treeColumn = 0;
+				}
+
+				DrawTexturePro(assetManager.treeAtlas,
+					GetTextureAltasBlock(treeColumn, treeRow, 32, 32),
+					{ (float)x, (float)y, 1, 1 },
+					{ 0, 0 },
+					0.0f,
+					WHITE);
+			}
 		}
 	}
 
+	DrawTexturePro(assetManager.frame,
+		{ 0, 0, (float)assetManager.frame.width, (float)assetManager.frame.height },
+		{ (float)blockX, (float)blockY, 1, 1 },
+		{ 0,0 },
+		0.0f,
+		WHITE);
+
 	EndMode2D();
+
+	DrawFPS(10, 10);
 
 	return true;
 }
@@ -107,3 +200,5 @@ void CloseGame()
 {
 	std::cout << "\n\nCLOSING GAME!!!!!!!!!!!!!\n\n";
 }
+
+

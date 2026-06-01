@@ -1,4 +1,6 @@
 #pragma once
+#include <blocks.h>
+
 bool InitGame();
-bool UpdateGame();
+bool UpdateGame(Block::Type selectedBlock);
 void CloseGame();

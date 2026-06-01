@@ -5,9 +5,10 @@
 #include <rlImGui.h>
 
 #include <gameMain.h>
+#include <blocks.h>
 
 void SetUpImGui();
-void DrawImGui(Color &bgColor);
+void DrawImGui(Block::Type &selectedBlock);
 
 int main()
 {
@@ -21,6 +22,7 @@ int main()
 	SetTargetFPS(240);
 
 	Color backgroundColor{ BLACK };
+	Block::Type selectedBlock = Block::Type::GrassBlock;
 
 	bool showDebugWindow = false;
 
@@ -50,14 +52,14 @@ int main()
 		ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 		ImGui::PopStyleColor(2);
 
-		if(!UpdateGame())
+		if(!UpdateGame(selectedBlock))
 		{
 			CloseWindow();
 		}
 
 		if (showDebugWindow)
 		{
-			DrawImGui(backgroundColor);
+			DrawImGui(selectedBlock);
 		}
 
 		rlImGuiEnd();
@@ -81,28 +83,24 @@ void SetUpImGui()
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 }
 
-void DrawImGui(Color &bgColor)
+void DrawImGui(Block::Type &selectedBlock)
 {
-	static int red = 0;
-	static int green = 0;
-	static int blue = 0;
-	static int alpha = 0;
+	static int selectedBlockIndex = (int)Block::Type::GrassBlock;
 
 	ImGui::Begin("Debug Window");
-	ImGui::Text("Change Background Color");
 
-	ImGui::SliderInt("Red", &red, 0, 255);
-	ImGui::SliderInt("Green", &green, 0, 255);
-	ImGui::SliderInt("Blue", &blue, 0, 255);
-	ImGui::SliderInt("Alpha", &alpha, 0, 255);
+	ImGui::Text("Change block type");
 
-	if(ImGui::Button("Apply"))
-	{
-		bgColor.r = red;
-		bgColor.g = green;
-		bgColor.b = blue;
-		bgColor.a = alpha;
-	}
+	ImGui::SliderInt(
+		"Block ID",
+		&selectedBlockIndex,
+		1,
+		(int)Block::Type::BLOCKS_COUNT - 1
+	);
+
+	selectedBlock = (Block::Type)selectedBlockIndex;
+
+	ImGui::Text("Selected block ID: %d", selectedBlockIndex);
 
 	ImGui::End();
 }
