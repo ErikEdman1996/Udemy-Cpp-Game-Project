@@ -1,16 +1,18 @@
 #include <raylib.h>
 #include <iostream>
 #include "gameMain.h"
+#include <asserts.h>
+#include <assetManager.h>
 
 struct GameData
 {
-	float positionX{ 100.0f };
-	float positionY{ 100.0f };
-	Color playerColor{ RED };
 }gameData;
+
+AssetManager assetManager;
 
 bool InitGame()
 {
+	assetManager.LoadAll();
 	return true;
 }
 
@@ -23,24 +25,8 @@ bool UpdateGame()
 		deltaTime = 1.0f / .5f;
 	}
 
-	if (IsKeyDown(KEY_A))
-	{
-		gameData.positionX -= 200.0f * deltaTime;
-	}
-	if (IsKeyDown(KEY_D))
-	{
-		gameData.positionX += 200.0f * deltaTime;
-	}
-	if (IsKeyDown(KEY_W))
-	{
-		gameData.positionY -= 200.0f * deltaTime;
-	}
-	if (IsKeyDown(KEY_S))
-	{
-		gameData.positionY += 200.0f * deltaTime;
-	}
-
-	DrawRectangle(gameData.positionX, gameData.positionY, 50.0f, 50.0f, gameData.playerColor);
+	DrawTexturePro(assetManager.dirt, { 0, 0, (float)assetManager.dirt.width, (float)assetManager.dirt.height },
+		{ 50, 50, 100, 100 }, { 0, 0 }, 0.0f, WHITE);
 
 	return true;
 }
