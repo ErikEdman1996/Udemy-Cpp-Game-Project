@@ -7,6 +7,8 @@
 #include "helpers.h"
 #include <raymath.h>
 #include "randomStuff.h"
+#include "worldGenerator.h"
+#include <imgui.h>
 
 struct GameData
 {
@@ -21,17 +23,9 @@ bool InitGame()
 {
 	assetManager.LoadAll();
 
-	gameData.gameMap.Create(30, 10);
+	GenerateWorld(gameData.gameMap);
 
-	for(int y = 0; y < gameData.gameMap.height; y++)
-	{
-		for(int x = 0; x < gameData.gameMap.width; x++)
-		{
-			gameData.gameMap.GetBlockUnsafe(x, y).type = Block::Type::Dirt;
-		}
-	}
-
-	gameData.camera.target = { 0, 0 };
+	gameData.camera.target = { 0, 150.0f };
 	gameData.camera.rotation = 0.0f;
 	gameData.camera.zoom = 50.0f;
 
@@ -51,22 +45,23 @@ bool UpdateGame(Block::Type selectedBlock)
 
 	ClearBackground(SKYBLUE);
 
+	static float CAMERA_SPEED = 10.0f;
 
 	if (IsKeyDown(KEY_LEFT))
 	{
-		gameData.camera.target.x -= 7.f * deltaTime;
+		gameData.camera.target.x -= CAMERA_SPEED * deltaTime;
 	}
 	if (IsKeyDown(KEY_RIGHT))
 	{
-		gameData.camera.target.x += 7.f * deltaTime;
+		gameData.camera.target.x += CAMERA_SPEED * deltaTime;
 	}
 	if (IsKeyDown(KEY_UP))
 	{
-		gameData.camera.target.y -= 7.f * deltaTime;
+		gameData.camera.target.y -= CAMERA_SPEED * deltaTime;
 	}
 	if (IsKeyDown(KEY_DOWN))
 	{
-		gameData.camera.target.y += 7.f * deltaTime;
+		gameData.camera.target.y += CAMERA_SPEED * deltaTime;
 	}
 
 	Vector2 worldMousePos = GetScreenToWorld2D(GetMousePosition(), gameData.camera);
@@ -229,6 +224,12 @@ bool UpdateGame(Block::Type selectedBlock)
 		WHITE);
 
 	EndMode2D();
+
+	ImGui::Begin("Game Control");
+	ImGui::SliderFloat("Camera Zoom", &gameData.camera.zoom, 10.0f, 150.0f);
+	ImGui::SliderFloat("Camera Speed", &CAMERA_SPEED, 5.0f, 30.0f);
+
+	ImGui::End();
 
 	DrawFPS(10, 10);
 
