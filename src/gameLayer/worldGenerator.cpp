@@ -1,148 +1,116 @@
 #include "worldGenerator.h"
 #include "randomStuff.h"
 #include <raymath.h>
+#include <FastNoiseSIMD.h>
+
+float lerp(float a, float b, float t)
+{
+	return a + (b - a) * t;
+}
 
 void GenerateWorld(GameMap& map, int seed)
 {
-	const int width{ 900 };
-	const int height{ 500 };
+    const int width{ 900 };
+    const int height{ 500 };
 
-	map.Create(width, height);
+    map.Create(width, height);
 
-	auto unsignedSeed = static_cast<std::ranlux24_base::result_type>(seed);
-	std::ranlux24_base rng{ unsignedSeed };
+    std::unique_ptr<FastNoiseSIMD> plainsNoiseGenerator{ FastNoiseSIMD::NewFastNoiseSIMD() };
+    std::unique_ptr<FastNoiseSIMD> mountainNoiseGenerator{ FastNoiseSIMD::NewFastNoiseSIMD() };
+    std::unique_ptr<FastNoiseSIMD> biomeNoiseGenerator{ FastNoiseSIMD::NewFastNoiseSIMD() };
+    std::unique_ptr<FastNoiseSIMD> stoneNoiseGenerator{ FastNoiseSIMD::NewFastNoiseSIMD() };
 
-	int directionDirt = GetRandomInt(rng, -2, 2);
-	int keepDirectionDirtTime = GetRandomInt(rng, 5, 50);
+    plainsNoiseGenerator->SetSeed(seed++);
+    mountainNoiseGenerator->SetSeed(seed++);
+    biomeNoiseGenerator->SetSeed(seed++);
+    stoneNoiseGenerator->SetSeed(seed++);
 
-	int directionStone = GetRandomInt(rng, -2, 2);
-	int keepDirectionStoneTime = GetRandomInt(rng, 5, 50);
+    plainsNoiseGenerator->SetNoiseType(FastNoiseSIMD::NoiseType::SimplexFractal);
+    plainsNoiseGenerator->SetFractalOctaves(2);
+    plainsNoiseGenerator->SetFrequency(0.01f);
 
-	int dirtHeight = 70;
-	int stoneHeight = 90;
+    mountainNoiseGenerator->SetNoiseType(FastNoiseSIMD::NoiseType::SimplexFractal);
+    mountainNoiseGenerator->SetFractalOctaves(5);
+    mountainNoiseGenerator->SetFrequency(0.02f);
 
+    biomeNoiseGenerator->SetNoiseType(FastNoiseSIMD::NoiseType::SimplexFractal);
+    biomeNoiseGenerator->SetFractalOctaves(1);
+    biomeNoiseGenerator->SetFrequency(0.001f); // very low = large biome areas
 
-	for (int x = 0; x < width; x++)
-	{
-		keepDirectionDirtTime--;
+    stoneNoiseGenerator->SetNoiseType(FastNoiseSIMD::NoiseType::SimplexFractal);
+    stoneNoiseGenerator->SetFractalOctaves(4);
+    stoneNoiseGenerator->SetFrequency(0.03f);
 
-		if(keepDirectionDirtTime <= 0)
-		{
-			directionDirt = GetRandomInt(rng, -2, 2);
-			keepDirectionDirtTime = GetRandomInt(rng, 5, 50);
-		}
+    float* plainsNoise = FastNoiseSIMD::GetEmptySet(width);
+    float* mountainNoise = FastNoiseSIMD::GetEmptySet(width);
+    float* biomeNoise = FastNoiseSIMD::GetEmptySet(width);
+    float* stoneNoise = FastNoiseSIMD::GetEmptySet(width);
 
-		if(directionDirt == -1)
-		{
-			if(GetRandomChance(rng, 0.25f))
-			{
-				dirtHeight--;
-			}
-		}
-		else if(directionDirt == -2)
-		{
-			if (GetRandomChance(rng, 0.25f))
-			{
-				dirtHeight--;
-			}
-			if (GetRandomChance(rng, 0.25f))
-			{
-				dirtHeight--;
-			}
-		}
-		else if(directionDirt == 1)
-		{
-			if (GetRandomChance(rng, 0.25f))
-			{
-				dirtHeight++;
-			}
-		}
-		else if (directionDirt == 2)
-		{
-			if (GetRandomChance(rng, 0.25f))
-			{
-				dirtHeight++;
-			}
-			if (GetRandomChance(rng, 0.25f))
-			{
-				dirtHeight++;
-			}
-		}
+    plainsNoiseGenerator->FillNoiseSet(plainsNoise, 0, 0, 0, width, 1, 1);
+    mountainNoiseGenerator->FillNoiseSet(mountainNoise, 0, 0, 0, width, 1, 1);
+    biomeNoiseGenerator->FillNoiseSet(biomeNoise, 0, 0, 0, width, 1, 1);
+    stoneNoiseGenerator->FillNoiseSet(stoneNoise, 0, 0, 0, width, 1, 1);
 
-		//Stone
-		keepDirectionStoneTime--;
+    for (int i = 0; i < width; i++)
+    {
+        plainsNoise[i] = (plainsNoise[i] + 1.0f) / 2.0f;
+        mountainNoise[i] = (mountainNoise[i] + 1.0f) / 2.0f;
+        biomeNoise[i] = (biomeNoise[i] + 1.0f) / 2.0f;
+        stoneNoise[i] = (stoneNoise[i] + 1.0f) / 2.0f;
+    }
 
-		if (keepDirectionStoneTime <= 0)
-		{
-			directionStone = GetRandomInt(rng, -2, 2);
-			keepDirectionStoneTime = GetRandomInt(rng, 5, 50);
-		}
+    const int surfaceMin = 80;
+    const int surfaceMax = 180;
 
-		if (directionStone == -1)
-		{
-			if (GetRandomChance(rng, 0.25f))
-			{
-				stoneHeight--;
-			}
-		}
-		else if (directionStone == -2)
-		{
-			if (GetRandomChance(rng, 0.25f))
-			{
-				stoneHeight--;
-			}
-			if (GetRandomChance(rng, 0.25f))
-			{
-				stoneHeight--;
-			}
-		}
-		else if (directionStone == 1)
-		{
-			if (GetRandomChance(rng, 0.25f))
-			{
-				stoneHeight++;
-			}
-		}
-		else if (directionStone == 2)
-		{
-			if (GetRandomChance(rng, 0.25f))
-			{
-				stoneHeight++;
-			}
-			if (GetRandomChance(rng, 0.25f))
-			{
-				stoneHeight++;
-			}
-		}
+    const int stoneDepthMin = 20;
+    const int stoneDepthMax = 60;
 
-		if(stoneHeight < 60)
-		{
-			stoneHeight = 60;
-		}
+    for (int x = 0; x < width; x++)
+    {
+        int plainsHeight = 140 + static_cast<int>(plainsNoise[x] * 8);
+        int mountainHeight = 80 + static_cast<int>(mountainNoise[x] * 90);
 
-		if(stoneHeight > 120)
-		{
-			stoneHeight = 120;
-		}
-		
-		for (int y = 0; y < height; y++)
-		{
-			Block block;
+        float biomeValue = biomeNoise[x] * 0.55f;
 
-			if (y > dirtHeight)
-			{
-				block.type = Block::Type::Dirt;
-			}
-			if(y == dirtHeight)
-			{
-				block.type = Block::Type::GrassBlock;
-			}
-			if(y > stoneHeight)
-			{
-				block.type = Block::Type::Stone;
-			}
+        int surfaceHeight = static_cast<int>(
+            Lerp(
+                static_cast<float>(plainsHeight),
+                static_cast<float>(mountainHeight),
+                biomeValue
+            )
+            );
 
-			map.GetBlockUnsafe(x, y) = block;
-		}
-	}
+        int stoneDepth = stoneDepthMin + static_cast<int>((stoneDepthMax - stoneDepthMin) * stoneNoise[x]);
+        int stoneHeight = surfaceHeight + stoneDepth;
+
+        for (int y = 0; y < height; y++)
+        {
+            Block block{};
+            block.type = Block::Type::Air;
+
+            if (y < surfaceHeight)
+            {
+                block.type = Block::Type::Air;
+            }
+            else if (y == surfaceHeight)
+            {
+                block.type = Block::Type::GrassBlock;
+            }
+            else if (y < stoneHeight)
+            {
+                block.type = Block::Type::Dirt;
+            }
+            else
+            {
+                block.type = Block::Type::Stone;
+            }
+
+            map.GetBlockUnsafe(x, y) = block;
+        }
+    }
+
+    FastNoiseSIMD::FreeNoiseSet(plainsNoise);
+    FastNoiseSIMD::FreeNoiseSet(mountainNoise);
+    FastNoiseSIMD::FreeNoiseSet(biomeNoise);
+    FastNoiseSIMD::FreeNoiseSet(stoneNoise);
 }

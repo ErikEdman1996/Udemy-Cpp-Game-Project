@@ -25,6 +25,7 @@ project(mygame)
 add_subdirectory(thirdParty/raylib-6.0)
 add_subdirectory(thirdParty/imgui-docking)
 add_subdirectory(thirdParty/rlimgui)
+add_subdirectory(thirdParty/FastNoiseSIMD)
 
 
 
@@ -85,7 +86,7 @@ target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURC
 target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src/platform")
 
 
-target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE raylib_static imgui rlimgui) 
+target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE raylib_static imgui rlimgui fastNoiseSIMD) 
 
 
 
