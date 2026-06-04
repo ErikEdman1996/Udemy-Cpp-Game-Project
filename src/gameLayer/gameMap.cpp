@@ -26,7 +26,7 @@ Block &GameMap::GetBlockUnsafe(int x, int y)
 {
 	permaAssertCommentDevelopement(foreGroundData.size() == width * height, "Map data is not initialized");
 
-	permaAssertCommentDevelopement(x >= 0 && y >= 0 && x <= width && y <= height, "GetBlockSafe out of bounds error");
+	permaAssertCommentDevelopement(x >= 0 && y >= 0 && x < width && y < height, "GetBlockSafe out of bounds error");
 
 	return foreGroundData[x + y * width];
 }
@@ -47,7 +47,7 @@ Block& GameMap::GetBackgroundBlockUnsafe(int x, int y)
 {
 	permaAssertCommentDevelopement(backGroundData.size() == width * height, "Map data is not initialized");
 
-	permaAssertCommentDevelopement(x >= 0 && y >= 0 && x <= width && y <= height, "GetBlockSafe out of bounds error");
+	permaAssertCommentDevelopement(x >= 0 && y >= 0 && x < width && y < height, "GetBlockSafe out of bounds error");
 
 	return backGroundData[x + y * width];
 }

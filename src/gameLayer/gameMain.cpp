@@ -71,15 +71,10 @@ bool UpdateGame(Block::Type selectedBlock)
 	if(IsMouseButtonDown(MOUSE_BUTTON_LEFT))	// Remove block
 	{
 		auto blockFg = gameData.gameMap.GetBlockSafe(blockX, blockY);
-		auto blockBg = gameData.gameMap.GetBackgroundBlockSafe(blockX, blockY);
 
 		if(blockFg != nullptr)
 		{
 			blockFg->type = Block::Type::Air;
-		}
-		if(blockBg != nullptr)
-		{
-			blockBg->type = Block::Type::Air;
 		}
 	}
 
